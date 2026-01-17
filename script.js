@@ -511,22 +511,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 100);
     });
     
-    // キーボード表示時に入力欄が見えるようにする
-    const controlPanel = document.querySelector('.control-panel');
-    
-    document.addEventListener('focusin', function(e) {
-        const target = e.target;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
-            // 少し遅延させてキーボードが表示されてからスクロール
-            setTimeout(function() {
-                // control-panel内でのみスクロール
-                if (controlPanel.contains(target)) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 300);
-        }
-    });
-    
     // visualViewportでキーボード対応（対応ブラウザのみ）
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', function() {
