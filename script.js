@@ -454,6 +454,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         pdf.save('a4_with_rectangle.pdf');
     });
     
+    // ウィンドウリサイズ時にプレビューサイズを更新
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            updatePreview();
+        }, 100);
+    });
+    
     // 初期表示
     renderElementList();
     updatePreview();

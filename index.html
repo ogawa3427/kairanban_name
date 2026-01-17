@@ -15,12 +15,15 @@
             padding: 0;
             background-color: #f5f5f5;
             font-size: 18px;
+            overflow: hidden;
+            height: 100vh;
         }
         .container {
             display: flex;
             flex-direction: column;
             max-width: 100%;
             margin: 0;
+            height: 100vh;
         }
         .preview-panel {
             width: 100%;
@@ -30,6 +33,7 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            flex-shrink: 0;
         }
         .control-panel {
             width: 100%;
@@ -37,6 +41,8 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            flex: 1;
         }
         .form-group {
             margin-bottom: 20px;
@@ -193,6 +199,7 @@
             overflow: auto;
             touch-action: pan-x pan-y pinch-zoom;
             -webkit-overflow-scrolling: touch;
+            position: relative;
         }
         #preview img {
             max-width: none;
@@ -216,7 +223,6 @@
 <body>
     <div class="container">
         <div class="preview-panel">
-            <h2>プレビュー</h2>
             <div id="preview">
                 <div class="preview-placeholder">読み込み中...</div>
             </div>
