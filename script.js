@@ -499,7 +499,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     generatePdfBtn.addEventListener('click', function() {
         const pdf = generatePdf();
-        pdf.save('a4_with_rectangle.pdf');
+        // 日時を取得（YYYYMMDD-HHMMSS形式）
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const timestamp = `${year}${month}${day}-${hours}${minutes}${seconds}`;
+        pdf.save(`a4_with_rectangle_${timestamp}.pdf`);
     });
     
     // ウィンドウリサイズ時にプレビューサイズを更新
@@ -518,10 +527,30 @@ document.addEventListener('DOMContentLoaded', async function() {
             const vh = window.visualViewport.height;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
         });
+        
+        // ビューポートのスクロールを強制的に戻す
+        window.visualViewport.addEventListener('scroll', function() {
+            window.scrollTo(0, 0);
+        });
+        
         // 初期値を設定
         const vh = window.visualViewport.height;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
     }
+    
+    // OSがページをスクロールしようとしたら強制的に戻す
+    window.addEventListener('scroll', function() {
+        if (window.scrollY !== 0 || window.scrollX !== 0) {
+            window.scrollTo(0, 0);
+        }
+    });
+    
+    document.body.addEventListener('scroll', function() {
+        if (document.body.scrollTop !== 0 || document.body.scrollLeft !== 0) {
+            document.body.scrollTop = 0;
+            document.body.scrollLeft = 0;
+        }
+    });
     
     // 初期表示
     renderElementList();
