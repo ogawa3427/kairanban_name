@@ -362,39 +362,59 @@ document.addEventListener('DOMContentLoaded', async function() {
             existingImg.remove();
         }
         
+        // ラッパーを作成
+        const wrapper = document.createElement('div');
+        wrapper.className = 'preview-wrapper';
+        
         const img = document.createElement('img');
         img.src = imgData;
         img.alt = 'プレビュー';
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
         
         // 初期サイズ：画面幅の90%程度に収まるように調整（余裕を持たせる）
         const screenWidth = window.innerWidth;
         const canvasWidthPx = canvas.width;
+        const canvasHeightPx = canvas.height;
         const initialScale = (screenWidth * 0.9) / canvasWidthPx;
-        img.style.width = `${canvasWidthPx * initialScale}px`;
-        img.style.height = 'auto';
-        img.style.maxWidth = 'none';
         
-        // ピンチズーム対応
+        // ピンチズームとパン用の変数
         let scale = initialScale;
+        let translateX = 0;
+        let translateY = 0;
         let lastTouchDistance = 0;
+        let lastTouchCenter = { x: 0, y: 0 };
         let isPinching = false;
+        let isPanning = false;
         
-        img.addEventListener('touchstart', function(e) {
+        function updateTransform() {
+            img.style.transform = `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px)) scale(${scale})`;
+            img.style.width = `${canvasWidthPx * scale}px`;
+            img.style.height = `${canvasHeightPx * scale}px`;
+        }
+        
+        // 初期状態を設定
+        updateTransform();
+        
+        // タッチイベント処理
+        wrapper.addEventListener('touchstart', function(e) {
             if (e.touches.length === 2) {
+                e.preventDefault();
                 isPinching = true;
+                isPanning = true;
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
                 lastTouchDistance = Math.hypot(
                     touch2.clientX - touch1.clientX,
                     touch2.clientY - touch1.clientY
                 );
+                lastTouchCenter = {
+                    x: (touch1.clientX + touch2.clientX) / 2,
+                    y: (touch1.clientY + touch2.clientY) / 2
+                };
             }
         });
         
-        img.addEventListener('touchmove', function(e) {
-            if (e.touches.length === 2 && isPinching) {
+        wrapper.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2 && (isPinching || isPanning)) {
                 e.preventDefault();
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
@@ -402,29 +422,45 @@ document.addEventListener('DOMContentLoaded', async function() {
                     touch2.clientX - touch1.clientX,
                     touch2.clientY - touch1.clientY
                 );
+                const currentCenter = {
+                    x: (touch1.clientX + touch2.clientX) / 2,
+                    y: (touch1.clientY + touch2.clientY) / 2
+                };
                 
+                // ピンチズーム
                 if (lastTouchDistance > 0) {
                     const scaleChange = currentDistance / lastTouchDistance;
-                    scale *= scaleChange;
-                    scale = Math.max(0.1, Math.min(scale, 10)); // 0.1倍～10倍に制限
-                    
-                    img.style.width = `${canvasWidthPx * scale}px`;
-                    img.style.height = 'auto';
+                    const newScale = scale * scaleChange;
+                    scale = Math.max(0.1, Math.min(newScale, 10)); // 0.1倍～10倍に制限
+                }
+                
+                // パン（移動）
+                if (lastTouchCenter.x !== 0 || lastTouchCenter.y !== 0) {
+                    const deltaX = currentCenter.x - lastTouchCenter.x;
+                    const deltaY = currentCenter.y - lastTouchCenter.y;
+                    translateX += deltaX;
+                    translateY += deltaY;
                 }
                 
                 lastTouchDistance = currentDistance;
+                lastTouchCenter = currentCenter;
+                
+                updateTransform();
             }
         });
         
-        img.addEventListener('touchend', function(e) {
+        wrapper.addEventListener('touchend', function(e) {
             if (e.touches.length < 2) {
                 isPinching = false;
+                isPanning = false;
                 lastTouchDistance = 0;
+                lastTouchCenter = { x: 0, y: 0 };
             }
         });
         
+        wrapper.appendChild(img);
         previewDiv.innerHTML = '';
-        previewDiv.appendChild(img);
+        previewDiv.appendChild(wrapper);
     }
     
     // スライダーの値を表示
@@ -462,6 +498,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             updatePreview();
         }, 100);
     });
+    
+    // キーボード表示時に入力欄が見えるようにする
+    const controlPanel = document.querySelector('.control-panel');
+    
+    document.addEventListener('focusin', function(e) {
+        const target = e.target;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+            // 少し遅延させてキーボードが表示されてからスクロール
+            setTimeout(function() {
+                // control-panel内でのみスクロール
+                if (controlPanel.contains(target)) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        }
+    });
+    
+    // visualViewportでキーボード対応（対応ブラウザのみ）
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function() {
+            // ビューポートの高さが変わった時（キーボード表示/非表示）
+            const vh = window.visualViewport.height;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        });
+        // 初期値を設定
+        const vh = window.visualViewport.height;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
     
     // 初期表示
     renderElementList();
