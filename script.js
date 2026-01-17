@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const paddingWarning = document.getElementById('paddingWarning');
     const generatePdfBtn = document.getElementById('generatePdf');
     const previewDiv = document.getElementById('preview');
+    const fontSizeLimitEnabled = document.getElementById('fontSizeLimitEnabled');
+    const fontSizeLimitInput = document.getElementById('fontSizeLimit');
+    const verticalAlignOptions = document.getElementById('verticalAlignOptions');
     
     // localStorageのキー
     const STORAGE_KEY = 'kairanban_settings';
@@ -36,7 +39,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             paddingTop: paddingTopInput.value,
             paddingBottom: paddingBottomInput.value,
             paddingLeft: paddingLeftInput.value,
-            paddingRight: paddingRightInput.value
+            paddingRight: paddingRightInput.value,
+            fontSizeLimitEnabled: fontSizeLimitEnabled.checked,
+            fontSizeLimit: fontSizeLimitInput.value,
+            verticalAlign: document.querySelector('input[name="verticalAlign"]:checked')?.value || 'center'
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     }
@@ -62,6 +68,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (settings.paddingBottom) paddingBottomInput.value = settings.paddingBottom;
                 if (settings.paddingLeft) paddingLeftInput.value = settings.paddingLeft;
                 if (settings.paddingRight) paddingRightInput.value = settings.paddingRight;
+                if (settings.fontSizeLimitEnabled !== undefined) {
+                    fontSizeLimitEnabled.checked = settings.fontSizeLimitEnabled;
+                    updateFontSizeLimitVisibility();
+                }
+                if (settings.fontSizeLimit) fontSizeLimitInput.value = settings.fontSizeLimit;
+                if (settings.verticalAlign) {
+                    const radio = document.querySelector(`input[name="verticalAlign"][value="${settings.verticalAlign}"]`);
+                    if (radio) radio.checked = true;
+                }
                 return true;
             } catch (e) {
                 console.error('設定の読み込みに失敗しました:', e);
@@ -140,9 +155,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updatePreview();
             });
             
+            // コントロール用のdivを作成
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'element-item-controls';
+            controlsDiv.appendChild(fontSizeInput);
+            controlsDiv.appendChild(deleteBtn);
+            
             item.appendChild(textInput);
-            item.appendChild(fontSizeInput);
-            item.appendChild(deleteBtn);
+            item.appendChild(controlsDiv);
             elementListDiv.appendChild(item);
         });
     }
@@ -264,6 +284,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 個別のフォントサイズが設定されている場合はそれを使用
                 if (element.fontSize !== null) {
                     actualFontSizePx = element.fontSize * MM_TO_PX;
+                } else if (fontSizeLimitEnabled.checked) {
+                    // 文字サイズ上限指定が有効で、文字数が上限未満の場合
+                    // 上限文字数で計算したフォントサイズを使用（文字数が少ない要素が大きくなりすぎないように）
+                    const fontSizeLimit = parseInt(fontSizeLimitInput.value) || 0;
+                    if (charCount < fontSizeLimit && fontSizeLimit > 0) {
+                        const limitedHeightFontSizePx = availableHeightPx / fontSizeLimit;
+                        actualFontSizePx = Math.min(elementWidthFontSizePx, limitedHeightFontSizePx);
+                    }
                 }
                 
                 ctx.font = `${actualFontSizePx}px ${fontFamily}`;
@@ -271,9 +299,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 文字間の間隔を計算（文字を正方形とみなす）
                 const charSpacing = actualFontSizePx;
                 
-                // 縦方向も中央揃え
+                // 縦方向の配置を計算
                 const totalTextHeight = charCount * charSpacing;
-                const startYPx = centerYPx - totalTextHeight / 2 + charSpacing / 2;
+                const verticalAlign = document.querySelector('input[name="verticalAlign"]:checked')?.value || 'center';
+                let startYPx;
+                if (verticalAlign === 'top') {
+                    // 上揃え
+                    startYPx = innerTopPx + charSpacing / 2;
+                } else {
+                    // 中央揃え
+                    startYPx = centerYPx - totalTextHeight / 2 + charSpacing / 2;
+                }
                 
                 // 基準文字の幅を測定（小さい文字の右寄せに使用）
                 const measure = ctx.measureText('あ');
@@ -568,6 +604,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         saveSettings();
         updatePreview();
     });
+    
+    // 文字サイズ上限指定の表示/非表示を切り替える関数
+    function updateFontSizeLimitVisibility() {
+        fontSizeLimitInput.style.display = fontSizeLimitEnabled.checked ? 'block' : 'none';
+    }
+    
+    // 文字サイズ上限指定のイベントリスナー
+    fontSizeLimitEnabled.addEventListener('change', function() {
+        updateFontSizeLimitVisibility();
+        saveSettings();
+        updatePreview();
+    });
+    fontSizeLimitInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    
+    // 縦方向配置のイベントリスナー
+    document.querySelectorAll('input[name="verticalAlign"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            saveSettings();
+            updatePreview();
+        });
+    });
+    
+    // 初期表示状態を設定
+    updateFontSizeLimitVisibility();
     
     // 余白チェック用のイベントリスナー（即座にチェック）
     rectWidthInput.addEventListener('input', checkGapWidth);

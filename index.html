@@ -127,17 +127,12 @@
             font-family: inherit;
         }
         .element-list {
-            max-height: 200px;
-            overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
             margin-bottom: 10px;
         }
         .element-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 8px;
+            padding: 12px;
             border-bottom: 1px solid #eee;
             background: #fff;
         }
@@ -145,20 +140,29 @@
             border-bottom: none;
         }
         .element-item .element-text {
-            flex: 1;
+            width: 100%;
             padding: 8px 10px;
             font-size: 18px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background: #fff;
             color: #000;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+        }
+        .element-item-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
         .element-item input[type="number"] {
-            width: 80px;
+            flex: 1;
             padding: 8px;
             font-size: 18px;
             color: #000;
             background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
         .element-item .delete-btn {
             width: auto;
@@ -166,6 +170,9 @@
             font-size: 18px;
             background-color: #dc3545;
             color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
         .element-item .delete-btn:hover {
             background-color: #c82333;
@@ -222,9 +229,6 @@
             max-width: none;
             height: auto;
             display: block;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -266,6 +270,24 @@
                 <div class="add-element">
                     <input type="text" id="newElementInput" placeholder="要素を入力">
                     <button type="button" id="addElementBtn">追加</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="fontSizeLimitEnabled" style="margin-right: 8px;">
+                    文字サイズ上限指定
+                </label>
+                <input type="number" id="fontSizeLimit" value="10" min="1" step="1" style="margin-top: 8px; display: none;" placeholder="文字数上限">
+            </div>
+            <div class="form-group">
+                <label>縦方向の配置</label>
+                <div id="verticalAlignOptions" style="margin-top: 8px;">
+                    <label style="margin-right: 16px;">
+                        <input type="radio" name="verticalAlign" value="center" checked style="margin-right: 4px;">中央揃え
+                    </label>
+                    <label>
+                        <input type="radio" name="verticalAlign" value="top" style="margin-right: 4px;">上揃え
+                    </label>
                 </div>
             </div>
             <div class="form-group">
