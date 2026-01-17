@@ -21,6 +21,55 @@ document.addEventListener('DOMContentLoaded', async function() {
     const generatePdfBtn = document.getElementById('generatePdf');
     const previewDiv = document.getElementById('preview');
     
+    // localStorageのキー
+    const STORAGE_KEY = 'kairanban_settings';
+    
+    // 設定を保存する関数
+    function saveSettings() {
+        const settings = {
+            rectWidth: rectWidthInput.value,
+            rectHeight: rectHeightInput.value,
+            elements: elements,
+            arrowChar: arrowCharInput.value,
+            arrowSizeRatio: arrowSizeRatioInput.value,
+            gapWidth: gapWidthInput.value,
+            paddingTop: paddingTopInput.value,
+            paddingBottom: paddingBottomInput.value,
+            paddingLeft: paddingLeftInput.value,
+            paddingRight: paddingRightInput.value
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    }
+    
+    // 設定を読み込む関数
+    function loadSettings() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const settings = JSON.parse(saved);
+                if (settings.rectWidth) rectWidthInput.value = settings.rectWidth;
+                if (settings.rectHeight) rectHeightInput.value = settings.rectHeight;
+                if (settings.elements && Array.isArray(settings.elements)) {
+                    elements = settings.elements;
+                }
+                if (settings.arrowChar) arrowCharInput.value = settings.arrowChar;
+                if (settings.arrowSizeRatio) {
+                    arrowSizeRatioInput.value = settings.arrowSizeRatio;
+                    arrowSizeRatioValue.textContent = parseFloat(settings.arrowSizeRatio).toFixed(2);
+                }
+                if (settings.gapWidth) gapWidthInput.value = settings.gapWidth;
+                if (settings.paddingTop) paddingTopInput.value = settings.paddingTop;
+                if (settings.paddingBottom) paddingBottomInput.value = settings.paddingBottom;
+                if (settings.paddingLeft) paddingLeftInput.value = settings.paddingLeft;
+                if (settings.paddingRight) paddingRightInput.value = settings.paddingRight;
+                return true;
+            } catch (e) {
+                console.error('設定の読み込みに失敗しました:', e);
+            }
+        }
+        return false;
+    }
+    
     // 要素リスト（テキストと個別フォントサイズを保持）
     let elements = [
         { text: 'あああ', fontSize: null },
@@ -64,6 +113,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             textInput.value = element.text;
             textInput.addEventListener('input', function() {
                 elements[index].text = this.value;
+                saveSettings();
                 updatePreview();
             });
             
@@ -76,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             fontSizeInput.value = element.fontSize || '';
             fontSizeInput.addEventListener('input', function() {
                 elements[index].fontSize = this.value ? parseFloat(this.value) : null;
+                saveSettings();
                 updatePreview();
             });
             
@@ -84,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             deleteBtn.textContent = '削除';
             deleteBtn.addEventListener('click', function() {
                 elements.splice(index, 1);
+                saveSettings();
                 renderElementList();
                 updatePreview();
             });
@@ -101,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (text) {
             elements.push({ text: text, fontSize: null });
             newElementInput.value = '';
+            saveSettings();
             renderElementList();
             updatePreview();
         }
@@ -478,18 +531,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     // スライダーの値を表示
     arrowSizeRatioInput.addEventListener('input', function() {
         arrowSizeRatioValue.textContent = parseFloat(this.value).toFixed(2);
+        saveSettings();
         updatePreview();
     });
     
-    // 入力値変更時に自動更新
-    rectWidthInput.addEventListener('input', updatePreview);
-    rectHeightInput.addEventListener('input', updatePreview);
-    arrowCharInput.addEventListener('input', updatePreview);
-    gapWidthInput.addEventListener('input', updatePreview);
-    paddingTopInput.addEventListener('input', updatePreview);
-    paddingBottomInput.addEventListener('input', updatePreview);
-    paddingLeftInput.addEventListener('input', updatePreview);
-    paddingRightInput.addEventListener('input', updatePreview);
+    // 入力値変更時に自動更新と保存
+    rectWidthInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    rectHeightInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    arrowCharInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    gapWidthInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    paddingTopInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    paddingBottomInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    paddingLeftInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
+    paddingRightInput.addEventListener('input', function() {
+        saveSettings();
+        updatePreview();
+    });
     
     // 余白チェック用のイベントリスナー（即座にチェック）
     rectWidthInput.addEventListener('input', checkGapWidth);
@@ -552,7 +630,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
     
-    // 初期表示
-    renderElementList();
+    // 初期表示：設定を読み込んでから表示
+    if (loadSettings()) {
+        renderElementList();
+    } else {
+        // デフォルト値で初期化
+        renderElementList();
+    }
     updatePreview();
 });
