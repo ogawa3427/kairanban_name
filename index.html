@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
+    <title>回覧板順序メーカー</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            font-size: 18px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            margin: 0;
+        }
+        .preview-panel {
+            width: 100%;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .control-panel {
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #000;
+            font-size: 18px;
+        }
+        h2 {
+            color: #000;
+            font-size: 24px;
+        }
+        input[type="number"],
+        input[type="text"],
+        textarea,
+        input[type="range"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 18px;
+            box-sizing: border-box;
+            color: #000;
+            background-color: #fff;
+        }
+        input[type="range"] {
+            padding: 0;
+            border: none;
+        }
+        .slider-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+        .padding-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .padding-inputs label {
+            font-weight: normal;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+        .padding-inputs input {
+            width: 100%;
+        }
+        input.warning {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+            color: #000;
+        }
+        input.warning:focus {
+            outline-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .warning-message {
+            color: #dc3545;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .element-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .element-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+        .element-item:last-child {
+            border-bottom: none;
+        }
+        .element-item .element-text {
+            flex: 1;
+            padding: 8px 10px;
+            font-size: 18px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            color: #000;
+        }
+        .element-item input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            font-size: 18px;
+            color: #000;
+            background: #fff;
+        }
+        .element-item .delete-btn {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 18px;
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .element-item .delete-btn:hover {
+            background-color: #c82333;
+        }
+        .add-element {
+            display: flex;
+            gap: 5px;
+        }
+        .add-element input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 18px;
+            color: #000;
+            background: #fff;
+        }
+        .add-element button {
+            width: auto;
+            padding: 8px 16px;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            font-size: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #preview {
+            width: 100%;
+            min-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            touch-action: pan-x pan-y pinch-zoom;
+            -webkit-overflow-scrolling: touch;
+        }
+        #preview img {
+            max-width: none;
+            height: auto;
+            display: block;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        .preview-placeholder {
+            color: #999;
+            text-align: center;
+        }
+        .preview-panel h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="preview-panel">
+            <h2>プレビュー</h2>
+            <div id="preview">
+                <div class="preview-placeholder">読み込み中...</div>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <h2>設定</h2>
+            <div class="form-group">
+                <label for="rectWidth">四角形の幅 (mm)</label>
+                <input type="number" id="rectWidth" value="200" min="1" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="rectHeight">四角形の高さ (mm)</label>
+                <input type="number" id="rectHeight" value="90" min="1" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>要素</label>
+                <div class="element-list" id="elementList"></div>
+                <div class="add-element">
+                    <input type="text" id="newElementInput" placeholder="要素を入力">
+                    <button type="button" id="addElementBtn">追加</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="arrowChar">矢印の文字</label>
+                <input type="text" id="arrowChar" value="→" style="width: 80px;">
+            </div>
+            <div class="form-group">
+                <label for="arrowSizeRatio">矢印サイズ比率<span class="slider-value" id="arrowSizeRatioValue">0.50</span></label>
+                <input type="range" id="arrowSizeRatio" value="0.5" min="0" max="3" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="gapWidth">余白の幅 (mm)<span class="warning-message" id="gapWidthWarning"></span></label>
+                <input type="number" id="gapWidth" value="2" min="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>四角形内側のパディング (mm)<span class="warning-message" id="paddingWarning"></span></label>
+                <div class="padding-inputs">
+                    <div>
+                        <label for="paddingTop">上</label>
+                        <input type="number" id="paddingTop" value="2" min="0" step="0.1">
+                    </div>
+                    <div>
+                        <label for="paddingBottom">下</label>
+                        <input type="number" id="paddingBottom" value="2" min="0" step="0.1">
+                    </div>
+                    <div>
+                        <label for="paddingLeft">左</label>
+                        <input type="number" id="paddingLeft" value="2" min="0" step="0.1">
+                    </div>
+                    <div>
+                        <label for="paddingRight">右</label>
+                        <input type="number" id="paddingRight" value="2" min="0" step="0.1">
+                    </div>
+                </div>
+            </div>
+            <button id="generatePdf" style="margin-top: 10px;">PDFをダウンロード</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
