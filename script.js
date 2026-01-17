@@ -351,51 +351,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         return hasWarning;
     }
     
-    function updatePreview() {
-        checkGapWidth();
-        const canvas = drawToCanvas();
-        const imgData = canvas.toDataURL('image/png');
+    // プレビューの状態を保持する変数（関数外で宣言）
+    let previewScale = null;
+    let previewTranslateX = 0;
+    let previewTranslateY = 0;
+    let previewWrapper = null;
+    let previewImg = null;
+    let canvasWidthPx = 0;
+    let canvasHeightPx = 0;
+    
+    function initPreviewWrapper() {
+        if (previewWrapper) return;
         
-        // 既存の画像があれば削除
-        const existingImg = previewDiv.querySelector('img');
-        if (existingImg) {
-            existingImg.remove();
-        }
+        previewWrapper = document.createElement('div');
+        previewWrapper.className = 'preview-wrapper';
         
-        // ラッパーを作成
-        const wrapper = document.createElement('div');
-        wrapper.className = 'preview-wrapper';
+        previewImg = document.createElement('img');
+        previewImg.alt = 'プレビュー';
         
-        const img = document.createElement('img');
-        img.src = imgData;
-        img.alt = 'プレビュー';
-        
-        // 初期サイズ：画面幅の90%程度に収まるように調整（余裕を持たせる）
-        const screenWidth = window.innerWidth;
-        const canvasWidthPx = canvas.width;
-        const canvasHeightPx = canvas.height;
-        const initialScale = (screenWidth * 0.9) / canvasWidthPx;
-        
-        // ピンチズームとパン用の変数
-        let scale = initialScale;
-        let translateX = 0;
-        let translateY = 0;
         let lastTouchDistance = 0;
         let lastTouchCenter = { x: 0, y: 0 };
         let isPinching = false;
         let isPanning = false;
         
-        function updateTransform() {
-            img.style.transform = `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px)) scale(${scale})`;
-            img.style.width = `${canvasWidthPx * scale}px`;
-            img.style.height = `${canvasHeightPx * scale}px`;
-        }
-        
-        // 初期状態を設定
-        updateTransform();
-        
         // タッチイベント処理
-        wrapper.addEventListener('touchstart', function(e) {
+        previewWrapper.addEventListener('touchstart', function(e) {
             if (e.touches.length === 2) {
                 e.preventDefault();
                 isPinching = true;
@@ -413,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        wrapper.addEventListener('touchmove', function(e) {
+        previewWrapper.addEventListener('touchmove', function(e) {
             if (e.touches.length === 2 && (isPinching || isPanning)) {
                 e.preventDefault();
                 const touch1 = e.touches[0];
@@ -430,26 +410,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // ピンチズーム
                 if (lastTouchDistance > 0) {
                     const scaleChange = currentDistance / lastTouchDistance;
-                    const newScale = scale * scaleChange;
-                    scale = Math.max(0.1, Math.min(newScale, 10)); // 0.1倍～10倍に制限
+                    const newScale = previewScale * scaleChange;
+                    previewScale = Math.max(0.1, Math.min(newScale, 10)); // 0.1倍～10倍に制限
                 }
                 
                 // パン（移動）
                 if (lastTouchCenter.x !== 0 || lastTouchCenter.y !== 0) {
                     const deltaX = currentCenter.x - lastTouchCenter.x;
                     const deltaY = currentCenter.y - lastTouchCenter.y;
-                    translateX += deltaX;
-                    translateY += deltaY;
+                    previewTranslateX += deltaX;
+                    previewTranslateY += deltaY;
                 }
                 
                 lastTouchDistance = currentDistance;
                 lastTouchCenter = currentCenter;
                 
-                updateTransform();
+                updatePreviewTransform();
             }
         });
         
-        wrapper.addEventListener('touchend', function(e) {
+        previewWrapper.addEventListener('touchend', function(e) {
             if (e.touches.length < 2) {
                 isPinching = false;
                 isPanning = false;
@@ -458,9 +438,41 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
         
-        wrapper.appendChild(img);
+        previewWrapper.appendChild(previewImg);
         previewDiv.innerHTML = '';
-        previewDiv.appendChild(wrapper);
+        previewDiv.appendChild(previewWrapper);
+    }
+    
+    function updatePreviewTransform() {
+        if (!previewImg) return;
+        previewImg.style.transform = `translate(calc(-50% + ${previewTranslateX}px), calc(-50% + ${previewTranslateY}px))`;
+        previewImg.style.width = `${canvasWidthPx * previewScale}px`;
+        previewImg.style.height = `${canvasHeightPx * previewScale}px`;
+    }
+    
+    function updatePreview() {
+        checkGapWidth();
+        const canvas = drawToCanvas();
+        const imgData = canvas.toDataURL('image/png');
+        
+        // 初回のみラッパーを作成
+        initPreviewWrapper();
+        
+        // キャンバスサイズを更新
+        canvasWidthPx = canvas.width;
+        canvasHeightPx = canvas.height;
+        
+        // 初回のみ初期スケールを設定
+        if (previewScale === null) {
+            const screenWidth = window.innerWidth;
+            previewScale = (screenWidth * 0.9) / canvasWidthPx;
+        }
+        
+        // 画像のsrcを更新
+        previewImg.src = imgData;
+        
+        // 変換を適用
+        updatePreviewTransform();
     }
     
     // スライダーの値を表示
